@@ -19,3 +19,10 @@
 .ci-history-menu-section {
     max-height:450px;
 }
+
+.ci-search-entry {
+    min-width: 300px;
+    min-height: 0px;
+    border-radius: 18px;
+    padding: 7px 12px;
+}

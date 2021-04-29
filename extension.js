@@ -125,9 +125,9 @@ const ClipboardIndicator = Lang.Class({
             });
             that.searchEntry = new St.Entry({
                 name: 'searchEntry',
-                style_class: 'search-entry',
+                style_class: 'ci-search-entry',
                 can_focus: true,
-                hint_text: _('Type here to search...'),
+                hint_text: _('Type to search...'),
                 track_hover: true,
                 x_expand: true,
                 y_expand: true
@@ -147,6 +147,7 @@ const ClipboardIndicator = Lang.Class({
                     if (open) {
                         that.searchEntry.set_text('');
                         global.stage.set_key_focus(that.searchEntry);
+                        that._updateBottomSeparator();
                     }
                     Mainloop.source_remove(a);
                 }));
@@ -192,7 +193,8 @@ const ClipboardIndicator = Lang.Class({
             });
 
             // Add separator
-            that.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+            that.bottomSeparator = new PopupMenu.PopupSeparatorMenuItem();
+            that.menu.addMenuItem(that.bottomSeparator);
 
             // Private mode switch
             that.privateModeMenuItem = new PopupMenu.PopupSwitchMenuItem(
@@ -238,6 +240,8 @@ const ClipboardIndicator = Lang.Class({
                 mItem.actor.visible = isMatching
             });
         }
+
+        this._updateBottomSeparator();
     },
 
     _truncate: function(string, length) {
@@ -351,19 +355,16 @@ const ClipboardIndicator = Lang.Class({
 
     _clearHistory: function () {
         let that = this;
-        // We can't actually remove all items, because the clipboard still
-        // has data that will be re-captured on next refresh, so we remove
-        // all except the currently selected item
-        // Don't remove favorites here
         that.historySection._getMenuItems().forEach(function (mItem) {
-            if (!mItem.currentlySelected) {
-                let idx = that.clipItemsRadioGroup.indexOf(mItem);
-                mItem.destroy();
-                that.clipItemsRadioGroup.splice(idx, 1);
+            const idx = that.clipItemsRadioGroup.indexOf(mItem);
+            if (mItem.currentlySelected) {
+                Clipboard.set_text(CLIPBOARD_TYPE, "");
             }
+            mItem.destroy();
+            that.clipItemsRadioGroup.splice(idx, 1);
         });
         that._updateCache();
-        that._showNotification(_("Clipboard history cleared"));    },
+    },
 
     _removeAll: function () {
         var that = this;
@@ -472,6 +473,8 @@ const ClipboardIndicator = Lang.Class({
                 return menuItem;
             }
         }));
+
+        this._updateBottomSeparator();
     },
 
     _onSelectionChange (selection, selectionType, selectionSource) {
@@ -884,6 +887,14 @@ const ClipboardIndicator = Lang.Class({
 
     _toggleMenu: function(){
         this.menu.toggle();
+    },
+
+    _updateBottomSeparator: function () {
+        if (this.bottomSeparator) {
+            this.bottomSeparator.actor.visible = this._getAllIMenuItems().some(function (mItem) {
+                return mItem.actor.visible;
+            });
+        }
     }
 });
 
